@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
+import Link from 'next/link'
 
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
@@ -162,6 +163,50 @@ function SkeletonRow() {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Nav bar                                                           */
+/* ------------------------------------------------------------------ */
+
+function AdvisorNav() {
+    const pathname = usePathname()
+    const links = [
+        { label: 'Queue', href: '/advisor/queue' },
+        { label: 'High-Consequence', href: '/advisor/high-consequence' },
+        { label: 'Audit Log', href: '/advisor/audit' },
+    ]
+
+    return (
+        <div style={{ display: 'flex', gap: 24 }}>
+            {links.map((link) => {
+                const active = pathname === link.href
+                return (
+                    <Link
+                        key={link.href}
+                        href={link.href}
+                        style={{
+                            fontSize: 14,
+                            color: active ? '#32302F' : '#6B6867',
+                            fontWeight: active ? 500 : 400,
+                            textDecoration: 'none',
+                            borderBottom: active ? '2px solid #00C07B' : '2px solid transparent',
+                            paddingBottom: 2,
+                            transition: 'color 150ms ease',
+                        }}
+                        onMouseEnter={(e) => {
+                            if (!active) e.currentTarget.style.color = '#32302F'
+                        }}
+                        onMouseLeave={(e) => {
+                            if (!active) e.currentTarget.style.color = '#6B6867'
+                        }}
+                    >
+                        {link.label}
+                    </Link>
+                )
+            })}
+        </div>
+    )
+}
+
+/* ------------------------------------------------------------------ */
 /*  Main page                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -280,7 +325,8 @@ export default function AdvisorQueuePage() {
                         WealthEasy
                     </span>
                     <span style={{ color: '#EBEBEB', fontSize: 20 }}>/</span>
-                    <span style={{ color: '#6B6867', fontSize: 14 }}>Advisor Portal</span>
+                    <span style={{ color: '#6B6867', fontSize: 14, marginRight: 16 }}>Advisor Portal</span>
+                    <AdvisorNav />
                 </div>
 
                 {/* Avatar */}
