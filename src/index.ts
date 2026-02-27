@@ -2,6 +2,11 @@ import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
 
 import { supabase } from './lib/supabase';
+import eventsRouter from './routes/events';
+import briefsRouter from './routes/briefs';
+import notificationsRouter from './routes/notifications';
+import clientRouter from './routes/client';
+import auditRouter from './routes/audit';
 
 const app = express();
 
@@ -72,6 +77,12 @@ app.get('/api/health', async (_req: Request, res: Response) => {
     });
   }
 });
+
+app.use('/api/events', eventsRouter);
+app.use('/api/briefs', briefsRouter);
+app.use('/api/notifications', notificationsRouter);
+app.use('/api/client', clientRouter);
+app.use('/api/audit', auditRouter);
 
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 

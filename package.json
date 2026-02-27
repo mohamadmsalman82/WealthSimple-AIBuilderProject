@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/mohamadmsalman82/WealthSimple-AIBuilderProject#readme",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@supabase/supabase-js": "^2.98.0",
     "dotenv": "^17.3.1",
     "express": "^5.2.1"
