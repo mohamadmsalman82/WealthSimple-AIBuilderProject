@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
@@ -531,6 +532,47 @@ export default function ClientDashboard() {
                         </div>
                     )}
                 </div>
+
+                {/* ==== Life event entry card ==== */}
+                <Link href="/client/life-event" style={{ textDecoration: 'none', display: 'block', padding: '16px 20px 0' }}>
+                    <div
+                        style={{
+                            background: '#F7F6F4',
+                            borderRadius: 16,
+                            padding: 16,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            cursor: 'pointer',
+                            transition: 'background 150ms ease',
+                        }}
+                    >
+                        <div>
+                            <div style={{ fontSize: 14, color: '#32302F', fontWeight: 500 }}>
+                                Something change recently?
+                            </div>
+                            <div style={{ fontSize: 12, color: '#6B6867', marginTop: 2 }}>
+                                Tell us about a life event
+                            </div>
+                        </div>
+                        <div
+                            style={{
+                                width: 36,
+                                height: 36,
+                                background: '#00C07B',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#FFFFFF',
+                                fontSize: 18,
+                                flexShrink: 0,
+                            }}
+                        >
+                            →
+                        </div>
+                    </div>
+                </Link>
             </div>
 
             {/* ==== Bottom nav bar ==== */}
