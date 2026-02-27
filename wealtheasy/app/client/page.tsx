@@ -236,13 +236,11 @@ function HomeIcon({ active }: { active: boolean }) {
     )
 }
 
-function InvestIcon() {
+function AccountsIcon() {
     return (
-        <div style={{ width: 24, height: 24, position: 'relative' }}>
-            {/* Rising chart line */}
-            <div style={{ position: 'absolute', bottom: 4, left: 2, width: 20, height: 2, background: '#6B6867', borderRadius: 1 }} />
-            <div style={{ position: 'absolute', bottom: 6, left: 6, width: 2, height: 8, background: '#6B6867', borderRadius: 1, transform: 'rotate(-30deg)' }} />
-            <div style={{ position: 'absolute', bottom: 10, left: 12, width: 2, height: 10, background: '#6B6867', borderRadius: 1, transform: 'rotate(15deg)' }} />
+        <div style={{ width: 24, height: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
+            <div style={{ width: 18, height: 3, background: '#6B6867', borderRadius: 2 }} />
+            <div style={{ width: 18, height: 3, background: '#6B6867', borderRadius: 2 }} />
         </div>
     )
 }
@@ -597,10 +595,13 @@ export default function ClientDashboard() {
                     <span style={{ fontSize: 10, color: '#00C07B', fontWeight: 500 }}>Home</span>
                 </div>
 
-                {/* Invest */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'default' }}>
-                    <InvestIcon />
-                    <span style={{ fontSize: 10, color: '#6B6867' }}>Invest</span>
+                {/* Accounts */}
+                <div
+                    onClick={() => router.push('/client/accounts')}
+                    style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, cursor: 'pointer' }}
+                >
+                    <AccountsIcon />
+                    <span style={{ fontSize: 10, color: '#6B6867' }}>Accounts</span>
                 </div>
 
                 {/* Spend */}
