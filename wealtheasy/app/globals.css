@@ -77,3 +77,17 @@ body {
   display: inline-block;
   animation: spin 1s linear infinite;
 }
+
+@keyframes progress {
+  from {
+    width: 0%
+  }
+
+  to {
+    width: 100%
+  }
+}
+
+.progress-bar {
+  animation: progress 1.5s ease-out forwards;
+}

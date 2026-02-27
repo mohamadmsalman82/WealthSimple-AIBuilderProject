@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -183,8 +183,24 @@ export default function BriefReviewPage() {
     const router = useRouter()
     const briefId = params.brief_id as string
 
-    // Data (using stub)
-    const brief = STUB_BRIEF
+    // Data — stub as default, overwritten when API responds
+    const [brief, setBrief] = useState(STUB_BRIEF)
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        const load = async () => {
+            setIsLoading(true)
+            try {
+                const result = await api.get(`/api/briefs/${briefId}`) as any
+                if (result?.brief_id) setBrief(result)
+            } catch (err) {
+                console.log('Using stub data for brief:', err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        load()
+    }, [briefId])
 
     // Editable content state
     const [summary, setSummary] = useState(brief.content.summary)
@@ -195,6 +211,16 @@ export default function BriefReviewPage() {
             explanation: a.explanation,
         }))
     )
+
+    // Re-sync editable state when brief data loads from API
+    useEffect(() => {
+        setSummary(brief.content.summary)
+        setActions(brief.content.actions.map((a) => ({
+            ...a,
+            title: a.title,
+            explanation: a.explanation,
+        })))
+    }, [brief])
 
     // Edit tracking
     const [hasEdits, setHasEdits] = useState(false)

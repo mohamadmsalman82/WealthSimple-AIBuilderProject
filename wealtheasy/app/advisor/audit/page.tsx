@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { api } from '@/lib/api'
 
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
@@ -368,7 +369,23 @@ type RecordFilter = 'all' | 'event' | 'brief' | 'notification'
 /* ------------------------------------------------------------------ */
 
 export default function AuditLogPage() {
-    const allEntries = STUB_AUDIT_ENTRIES
+    const [allEntries, setAllEntries] = useState(STUB_AUDIT_ENTRIES)
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        const load = async () => {
+            setIsLoading(true)
+            try {
+                const result = await api.get('/api/audit?limit=50&offset=0') as any
+                if (result?.entries) setAllEntries(result.entries)
+            } catch (err) {
+                console.log('Using stub data for audit:', err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        load()
+    }, [])
 
     // Filters
     const [actorFilter, setActorFilter] = useState<ActorFilter>('all')

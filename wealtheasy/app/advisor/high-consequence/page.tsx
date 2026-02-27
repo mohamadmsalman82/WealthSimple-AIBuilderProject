@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { api } from '@/lib/api'
@@ -371,7 +371,23 @@ function EventCard({ event, index }: { event: HCEvent; index: number }) {
 /* ------------------------------------------------------------------ */
 
 export default function HighConsequencePage() {
-    const events = STUB_HC_EVENTS
+    const [events, setEvents] = useState(STUB_HC_EVENTS)
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        const load = async () => {
+            setIsLoading(true)
+            try {
+                const result = await api.get('/api/events/high-consequence?status=pending&limit=50&offset=0') as any
+                if (result?.events) setEvents(result.events)
+            } catch (err) {
+                console.log('Using stub data for HC events:', err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        load()
+    }, [])
 
     return (
         <div

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-
+import { api } from '@/lib/api'
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
 /* ------------------------------------------------------------------ */
@@ -157,7 +157,7 @@ function BatteryIcon() {
     )
 }
 
-function BellIcon({ hasUnread }: { hasUnread: boolean }) {
+function BellIcon({ unreadCount }: { unreadCount: number }) {
     return (
         <div style={{ position: 'relative', width: 24, height: 24, cursor: 'pointer' }}>
             {/* Bell body */}
@@ -197,20 +197,28 @@ function BellIcon({ hasUnread }: { hasUnread: boolean }) {
                     borderRadius: '0 0 3px 3px',
                 }}
             />
-            {/* Red dot */}
-            {hasUnread && (
+            {/* Notification badge */}
+            {unreadCount > 0 && (
                 <div
                     style={{
                         position: 'absolute',
-                        top: -2,
-                        right: -2,
-                        width: 8,
-                        height: 8,
+                        top: -4,
+                        right: -4,
+                        minWidth: unreadCount > 1 ? 16 : 8,
+                        height: unreadCount > 1 ? 16 : 8,
                         borderRadius: '50%',
                         background: '#E8443A',
                         border: '1.5px solid #FFFFFF',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 9,
+                        color: '#FFFFFF',
+                        fontWeight: 600,
                     }}
-                />
+                >
+                    {unreadCount > 1 ? unreadCount : ''}
+                </div>
             )}
         </div>
     )
@@ -303,8 +311,21 @@ function TaxIcon() {
 export default function ClientDashboard() {
     const router = useRouter()
     const client = STUB_CLIENT
-    const notifications = STUB_NOTIFICATIONS
-    const hasUnread = notifications.some((n) => n.status === 'delivered' && n.opened_at === null)
+    const [notifications, setNotifications] = useState(STUB_NOTIFICATIONS)
+
+    useEffect(() => {
+        const load = async () => {
+            try {
+                const result = await api.get('/api/notifications?client_id=c1') as any
+                if (result?.notifications) setNotifications(result.notifications)
+            } catch (err) {
+                console.log('Using stub data for notifications:', err)
+            }
+        }
+        load()
+    }, [])
+
+    const unreadCount = notifications.filter(n => n.status === 'delivered' && !n.opened_at).length
     const { dollars, cents } = formatCurrency(client.portfolio_total)
 
     // Live time
@@ -370,7 +391,7 @@ export default function ClientDashboard() {
                         </div>
                     </div>
                     <div onClick={() => router.push('/client/notifications')}>
-                        <BellIcon hasUnread={hasUnread} />
+                        <BellIcon unreadCount={unreadCount} />
                     </div>
                 </div>
 

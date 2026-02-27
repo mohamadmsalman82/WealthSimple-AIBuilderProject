@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/lib/api'
 
 /* ------------------------------------------------------------------ */
@@ -248,7 +248,25 @@ function ActionCard({
 /* ------------------------------------------------------------------ */
 
 export default function BriefDetailPage() {
-    const brief = STUB_BRIEF
+    const params = useParams()
+    const briefId = params.brief_id as string
+    const [brief, setBrief] = useState(STUB_BRIEF)
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        const load = async () => {
+            setIsLoading(true)
+            try {
+                const result = await api.get(`/api/client/briefs/${briefId}`) as any
+                if (result?.brief_id) setBrief(result)
+            } catch (err) {
+                console.log('Using stub data for client brief:', err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        load()
+    }, [briefId])
 
     return (
         <div

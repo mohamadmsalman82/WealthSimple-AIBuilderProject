@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
+import { api } from '@/lib/api'
 
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
@@ -47,7 +48,18 @@ const STUB_BRIEFS = [
     },
 ]
 
-type BriefStub = (typeof STUB_BRIEFS)[number]
+interface BriefStub {
+    brief_id: string
+    client_id: string
+    client_name: string
+    event_type: string
+    confidence_score: number
+    source: string
+    risk_tier: string
+    status: string
+    created_at: string
+    time_in_queue_minutes: number
+}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -213,9 +225,25 @@ function AdvisorNav() {
 export default function AdvisorQueuePage() {
     const router = useRouter()
 
-    // State machine: 'loading' | 'error' | 'loaded'
-    const [pageState, setPageState] = useState<'loading' | 'error' | 'loaded'>('loaded')
-    const [briefs] = useState<BriefStub[]>(STUB_BRIEFS)
+    // Data state — stub as initial, overwritten when API responds
+    const [briefs, setBriefs] = useState<BriefStub[]>(STUB_BRIEFS)
+    const [isLoading, setIsLoading] = useState(false)
+
+    useEffect(() => {
+        const load = async () => {
+            setIsLoading(true)
+            try {
+                const result = await api.get('/api/briefs?status=pending&limit=50&offset=0') as any
+                if (result?.briefs) setBriefs(result.briefs)
+            } catch (err) {
+                // Backend not available — stub data remains in state
+                console.log('Using stub data for queue:', err)
+            } finally {
+                setIsLoading(false)
+            }
+        }
+        load()
+    }, [])
 
     // Filters
     const [riskFilter, setRiskFilter] = useState<RiskFilter>('all')
@@ -427,8 +455,15 @@ export default function AdvisorQueuePage() {
                         overflow: 'hidden',
                     }}
                 >
-                    {/* ---- Loading state ---- */}
-                    {pageState === 'loading' && (
+                    {/* ---- Loading progress bar ---- */}
+                    {isLoading && (
+                        <div style={{ height: 3, background: '#F7F6F4', borderRadius: 2, overflow: 'hidden' }}>
+                            <div className="progress-bar" style={{ height: '100%', background: '#00C07B', borderRadius: 2 }} />
+                        </div>
+                    )}
+
+                    {/* ---- Loading skeleton ---- */}
+                    {isLoading && (
                         <div>
                             <div
                                 style={{
@@ -459,38 +494,8 @@ export default function AdvisorQueuePage() {
                         </div>
                     )}
 
-                    {/* ---- Error state ---- */}
-                    {pageState === 'error' && (
-                        <div
-                            style={{
-                                padding: '80px 20px',
-                                textAlign: 'center',
-                            }}
-                        >
-                            <p style={{ color: '#E8443A', fontSize: 16, margin: '0 0 16px' }}>
-                                Failed to load briefs
-                            </p>
-                            <button
-                                onClick={() => setPageState('loaded')}
-                                style={{
-                                    padding: '8px 20px',
-                                    fontSize: 13,
-                                    borderRadius: 100,
-                                    border: '1px solid #EBEBEB',
-                                    background: '#FFFFFF',
-                                    color: '#32302F',
-                                    cursor: 'pointer',
-                                    fontFamily: "'DM Sans', sans-serif",
-                                    fontWeight: 500,
-                                }}
-                            >
-                                Retry
-                            </button>
-                        </div>
-                    )}
-
                     {/* ---- Loaded state ---- */}
-                    {pageState === 'loaded' && (
+                    {!isLoading && (
                         <>
                             {/* Column headers */}
                             <div
