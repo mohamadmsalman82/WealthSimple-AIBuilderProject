@@ -30,6 +30,21 @@ function sha256(input: string): string {
   return createHash('sha256').update(input).digest('hex');
 }
 
+const NOTIFICATION_HEADLINES: Record<string, string> = {
+  new_baby: "You recently had a baby — here's what it means for your money.",
+  new_job: "New job, new opportunities — here's what to do with your money now.",
+  income_drop: "We noticed a change in your income — here's what to know.",
+  marriage: "Congratulations on your marriage — here's your financial next steps.",
+  divorce: "We're here to help you navigate this financial transition.",
+  spouse_death: "We're sorry for your loss — here's what needs attention now.",
+  lump_sum_deposit: "A large deposit hit your account — here's how to put it to work.",
+  debt_payoff: "You paid off a debt — here's how to redirect that cash flow.",
+  child_leaving: "A big milestone — here's how your financial picture changes.",
+  retirement_approaching: "Your retirement window is closer than it looks.",
+  home_purchase: "You purchased a home — here's what changes financially.",
+  inheritance: "You received an inheritance — here's what to consider.",
+};
+
 router.get('/', async (req: Request, res: Response) => {
   const status = String(req.query.status ?? 'pending');
   const limit = parsePositiveInt(req.query.limit, 50);
@@ -141,7 +156,7 @@ router.post('/:brief_id/approve', async (req: Request, res: Response) => {
   try {
     const { data: existingBrief, error: fetchError } = await supabase
       .from('briefs')
-      .select('id, client_id, original_content_hash')
+      .select('id, client_id, original_content_hash, life_events(event_type)')
       .eq('id', brief_id)
       .single();
 
@@ -152,6 +167,9 @@ router.post('/:brief_id/approve', async (req: Request, res: Response) => {
     if (!existingBrief) {
       return res.status(404).json({ error: 'Brief not found' });
     }
+
+    const eventType: string =
+      firstRelation<any>(existingBrief.life_events)?.event_type ?? '';
 
     const originalHash = existingBrief.original_content_hash ?? '';
     const finalHash = sha256(JSON.stringify(edited_content));
@@ -173,7 +191,9 @@ router.post('/:brief_id/approve', async (req: Request, res: Response) => {
       return res.status(500).json({ error: updateError.message });
     }
 
-    const headline = "We noticed something. Here's what it means for your money.";
+    const headline =
+      NOTIFICATION_HEADLINES[eventType] ??
+      "We noticed something. Here's what it means for your money.";
 
     const { data: notificationRecord, error: notificationError } = await supabase
       .from('notifications')
