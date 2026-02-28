@@ -264,16 +264,30 @@ export default function BriefDetailPage() {
             setIsLoading(true)
             setError(null)
             try {
-                const result = await api.get(`/api/client/briefs/${briefId}?client_id=${selectedClientId}`) as any
-                console.log('[BriefDetail] API response for brief', briefId, ':', JSON.stringify(result).substring(0, 300))
+                // Temporary debug fetch — replace api.get with raw fetch
+                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/client/briefs/${briefId}?client_id=${selectedClientId}`)
+                console.log('[BriefDetail] Response status:', res.status)
+                console.log('[BriefDetail] Response headers:', Object.fromEntries(res.headers.entries()))
+                const text = await res.text()
+                console.log('[BriefDetail] Raw response body:', text)
+
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}: ${text}`)
+                }
+
+                const result = JSON.parse(text)
+                console.log('[BriefDetail] Parsed result:', JSON.stringify(result))
+
                 if (result?.brief_id) {
                     setBrief(result)
+                    console.log('[BriefDetail] Set real data successfully')
                 } else {
-                    console.error('[BriefDetail] Unexpected response shape:', result)
+                    console.log('[BriefDetail] Result missing brief_id — shape mismatch:', Object.keys(result))
                     setError('Brief data could not be loaded')
                 }
             } catch (err: any) {
                 console.error('[BriefDetail] Failed to load brief', briefId, ':', err?.message ?? err)
+                console.error('[BriefDetail] Full error object:', JSON.stringify(err))
                 setError(err?.message ?? 'Failed to load brief')
             } finally {
                 setIsLoading(false)
