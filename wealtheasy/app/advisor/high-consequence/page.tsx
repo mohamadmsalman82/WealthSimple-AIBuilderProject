@@ -378,7 +378,7 @@ export default function HighConsequencePage() {
         const load = async () => {
             setIsLoading(true)
             try {
-                const result = await api.get('/api/events/high-consequence?status=pending&limit=50&offset=0') as any
+                const result = await api.get('/api/events/high-consequence?status=pending_classification&limit=50&offset=0') as any
                 if (result?.events) setEvents(result.events)
             } catch (err) {
                 console.log('Using stub data for HC events:', err)

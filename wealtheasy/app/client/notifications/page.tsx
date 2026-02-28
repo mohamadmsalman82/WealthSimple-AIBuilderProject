@@ -80,7 +80,7 @@ export default function NotificationsPage() {
         const load = async () => {
             setIsLoading(true)
             try {
-                const result = await api.get('/api/notifications?client_id=c1') as any
+                const result = await api.get('/api/notifications?client_id=ae66133f-8eb4-4165-af1a-fd98e8553db9') as any
                 if (result?.notifications) setNotifications(result.notifications)
             } catch (err) {
                 console.log('Using stub data for notifications:', err)

@@ -254,8 +254,7 @@ export default function BriefReviewPage() {
         try {
             const body = {
                 advisor_id: 'advisor-demo',
-                was_edited: hasEdits,
-                content: {
+                edited_content: {
                     summary,
                     actions: actions.map((a) => ({
                         rank: a.rank,
