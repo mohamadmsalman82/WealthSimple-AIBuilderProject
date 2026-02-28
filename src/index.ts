@@ -1,5 +1,6 @@
 import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
+import cors from 'cors';
 
 import { supabase } from './lib/supabase';
 import eventsRouter from './routes/events';
@@ -9,6 +10,9 @@ import clientRouter from './routes/client';
 import auditRouter from './routes/audit';
 
 const app = express();
+
+// CORS — allow the Next.js frontend (port 3001) to call the Express API (port 3000)
+app.use(cors());
 
 // Global JSON body parsing middleware
 app.use(express.json());

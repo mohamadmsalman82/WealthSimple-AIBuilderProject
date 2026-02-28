@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { useDemoMode } from '@/lib/demo-mode-context'
 
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
@@ -73,23 +74,26 @@ function groupByRecency(notifs: NotifStub[]): { label: string; items: NotifStub[
 
 export default function NotificationsPage() {
     const router = useRouter()
-    const [notifications, setNotifications] = useState(STUB_NOTIFICATIONS)
-    const [isLoading, setIsLoading] = useState(false)
+    const { selectedClientId } = useDemoMode()
+    const [notifications, setNotifications] = useState<NotifStub[]>([])
+    const [isLoading, setIsLoading] = useState(true)
 
     useEffect(() => {
+        if (!selectedClientId) return
         const load = async () => {
             setIsLoading(true)
             try {
-                const result = await api.get('/api/notifications?client_id=c1') as any
-                if (result?.notifications) setNotifications(result.notifications)
+                const result = await api.get(`/api/notifications?client_id=${selectedClientId}`) as any
+                setNotifications(result?.notifications ?? [])
             } catch (err) {
-                console.log('Using stub data for notifications:', err)
+                console.error('Failed to load notifications:', err)
+                setNotifications([])
             } finally {
                 setIsLoading(false)
             }
         }
         load()
-    }, [])
+    }, [selectedClientId])
 
     const markAllRead = () => {
         // TODO: call PATCH /api/notifications when Mo adds that route

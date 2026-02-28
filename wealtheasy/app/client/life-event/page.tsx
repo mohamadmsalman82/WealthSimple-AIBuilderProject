@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { useDemoMode } from '@/lib/demo-mode-context'
 
 /* ------------------------------------------------------------------ */
 /*  Event definitions                                                 */
@@ -45,6 +46,7 @@ const EVENT_MESSAGES: Record<string, string> = {
 
 export default function LifeEventPage() {
     const router = useRouter()
+    const { selectedClientId } = useDemoMode()
     const [selected, setSelected] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
@@ -53,18 +55,17 @@ export default function LifeEventPage() {
     const selectedEvent = LIFE_EVENTS.find((e) => e.type === selected)
 
     const handleSubmit = async () => {
-        if (!selected) return
+        if (!selected || !selectedClientId) return
         setIsSubmitting(true)
         try {
             const res = await api.post('/api/events', {
-                client_id: 'c1',
+                client_id: selectedClientId,
                 event_type: selected,
                 source: 'self_reported',
-                signal_summary: null,
             })
             console.log('Event submitted:', res)
-        } catch {
-            console.log('API not available yet, proceeding to success state')
+        } catch (err) {
+            console.error('Event submission failed:', err)
         }
         setIsSubmitting(false)
         setIsSubmitted(true)

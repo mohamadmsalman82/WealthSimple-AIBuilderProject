@@ -183,18 +183,25 @@ export default function BriefReviewPage() {
     const router = useRouter()
     const briefId = params.brief_id as string
 
-    // Data — stub as default, overwritten when API responds
-    const [brief, setBrief] = useState(STUB_BRIEF)
-    const [isLoading, setIsLoading] = useState(false)
+    // Data — starts empty, loaded from backend API
+    const [brief, setBrief] = useState<typeof STUB_BRIEF | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
 
     useEffect(() => {
         const load = async () => {
             setIsLoading(true)
+            setLoadError(null)
             try {
                 const result = await api.get(`/api/briefs/${briefId}`) as any
-                if (result?.brief_id) setBrief(result)
-            } catch (err) {
-                console.log('Using stub data for brief:', err)
+                if (result?.brief_id) {
+                    setBrief(result)
+                } else {
+                    setLoadError('Brief not found or invalid response.')
+                }
+            } catch (err: any) {
+                console.error('Failed to load brief for review:', err)
+                setLoadError(err?.message ?? 'Could not reach backend')
             } finally {
                 setIsLoading(false)
             }
@@ -203,23 +210,19 @@ export default function BriefReviewPage() {
     }, [briefId])
 
     // Editable content state
-    const [summary, setSummary] = useState(brief.content.summary)
-    const [actions, setActions] = useState(
-        brief.content.actions.map((a) => ({
-            ...a,
-            title: a.title,
-            explanation: a.explanation,
-        }))
-    )
+    const [summary, setSummary] = useState('')
+    const [actions, setActions] = useState<typeof STUB_BRIEF.content.actions>([])
 
     // Re-sync editable state when brief data loads from API
     useEffect(() => {
-        setSummary(brief.content.summary)
-        setActions(brief.content.actions.map((a) => ({
-            ...a,
-            title: a.title,
-            explanation: a.explanation,
-        })))
+        if (brief?.content) {
+            setSummary(brief.content.summary)
+            setActions(brief.content.actions.map((a: any) => ({
+                ...a,
+                title: a.title,
+                explanation: a.explanation,
+            })))
+        }
     }, [brief])
 
     // Edit tracking
@@ -254,8 +257,7 @@ export default function BriefReviewPage() {
         try {
             const body = {
                 advisor_id: 'advisor-demo',
-                was_edited: hasEdits,
-                content: {
+                edited_content: {
                     summary,
                     actions: actions.map((a) => ({
                         rank: a.rank,
@@ -269,8 +271,8 @@ export default function BriefReviewPage() {
             const res = await api.post(`/api/briefs/${briefId}/approve`, body)
             console.log('Approve response:', res)
             router.push('/advisor/queue')
-        } catch (err) {
-            console.error('Approve error (expected — API not running):', err)
+        } catch (err: any) {
+            console.error('Approve failed:', err?.message ?? err)
             setApproving(false)
         }
     }
@@ -301,6 +303,25 @@ export default function BriefReviewPage() {
         }
         setShowFlagModal(false)
         router.push('/advisor/queue')
+    }
+
+    /* ---- Loading / error guards ---- */
+    if (isLoading) {
+        return (
+            <div style={{ minHeight: '100vh', background: '#F7F6F4', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: "'DM Sans', sans-serif" }}>
+                <p style={{ color: '#6B6867', fontSize: 14 }}>Loading brief…</p>
+            </div>
+        )
+    }
+
+    if (loadError || !brief) {
+        return (
+            <div style={{ minHeight: '100vh', background: '#F7F6F4', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, fontFamily: "'DM Sans', sans-serif" }}>
+                <p style={{ color: '#E8443A', fontSize: 16, fontWeight: 500, margin: 0 }}>Could not load brief</p>
+                <p style={{ color: '#6B6867', fontSize: 14, margin: 0 }}>{loadError ?? 'Brief data is unavailable'}</p>
+                <Link href="/advisor/queue" style={{ color: '#00C07B', fontSize: 14, marginTop: 8 }}>← Back to Queue</Link>
+            </div>
+        )
     }
 
     /* ---- Metadata pills ---- */
