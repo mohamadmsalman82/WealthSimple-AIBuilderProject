@@ -14,14 +14,9 @@ router.get('/briefs/:brief_id', async (req: Request, res: Response) => {
   }
 
   try {
-    // Single joined query — brief + event type + client profile
     const { data: brief, error: briefError } = await supabase
       .from('briefs')
-      .select(
-        `id, client_id, event_id, content, created_at,
-         life_events(event_type, created_at),
-         clients(name, province, age, income_bracket, accounts, tfsa_room, rrsp_room, dependents)`,
-      )
+      .select('id, client_id, event_id, content, created_at')
       .eq('id', brief_id)
       .single();
 
@@ -37,10 +32,15 @@ router.get('/briefs/:brief_id', async (req: Request, res: Response) => {
       return res.status(403).json({ error: 'Forbidden' });
     }
 
-    // Unwrap joined relations (Supabase may return object or array)
-    const eventRecord = Array.isArray(brief.life_events)
-      ? brief.life_events[0] ?? null
-      : brief.life_events ?? null;
+    const { data: eventRecord, error: eventError } = await supabase
+      .from('life_events')
+      .select('event_type, created_at')
+      .eq('id', brief.event_id)
+      .single();
+
+    if (eventError) {
+      return res.status(500).json({ error: eventError.message });
+    }
 
     const { data: notification, error: notificationError } = await supabase
       .from('notifications')
@@ -81,10 +81,10 @@ router.get('/briefs/:brief_id', async (req: Request, res: Response) => {
     const actions = Array.isArray(content.actions) ? content.actions : [];
 
     return res.status(200).json({
-      brief_id: brief.id,
-      event_type: (eventRecord as any)?.event_type ?? '',
-      event_context: (eventRecord as any)?.created_at
-        ? `Detected on ${new Date((eventRecord as any).created_at).toISOString()}`
+      brief_id,
+      event_type: eventRecord?.event_type ?? '',
+      event_context: eventRecord?.created_at
+        ? `Detected on ${new Date(eventRecord.created_at).toISOString()}`
         : '',
       content: {
         ...content,

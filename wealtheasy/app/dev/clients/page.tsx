@@ -17,6 +17,7 @@ interface ClientRow {
     tfsa_room: number | null
     rrsp_room: number | null
     dependents: number | null
+    portfolio_total: number | null
 }
 
 /* ------------------------------------------------------------------ */
@@ -65,8 +66,8 @@ export default function DevClientsPage() {
                 const supabase = createClient()
                 const { data, error: err } = await supabase
                     .from('clients')
-                    .select('id, name, age, province, income_bracket, accounts, tfsa_room, rrsp_room, dependents')
-                    .order('name')
+                    .select('id, name, age, province, income_bracket, accounts, tfsa_room, rrsp_room, dependents, portfolio_total')
+                    .order('portfolio_total', { ascending: false })
                 if (err) throw err
                 if (data) setClients(data)
             } catch (err) {
@@ -129,10 +130,11 @@ export default function DevClientsPage() {
             {!loading && !error && (
                 <>
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 900 }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 1050 }}>
                             <thead>
                                 <tr>
-                                    <th style={TH_STYLE}>NAME</th>
+                                    <th style={TH_STYLE}>CLIENT</th>
+                                    <th style={{ ...TH_STYLE, color: '#00C07B' }}>PORTFOLIO</th>
                                     <th style={TH_STYLE}>AGE</th>
                                     <th style={TH_STYLE}>PROV</th>
                                     <th style={TH_STYLE}>INCOME</th>
@@ -151,6 +153,9 @@ export default function DevClientsPage() {
                                         onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
                                     >
                                         <td style={{ ...TD_STYLE, color: '#00C07B' }}>{c.name}</td>
+                                        <td style={{ ...TD_STYLE, color: '#00C07B', fontWeight: 600 }}>
+                                            {formatDollars(c.portfolio_total)}
+                                        </td>
                                         <td style={TD_STYLE}>{c.age}</td>
                                         <td style={TD_STYLE}>{c.province}</td>
                                         <td style={TD_STYLE}>{c.income_bracket}</td>

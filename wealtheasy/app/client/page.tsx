@@ -5,33 +5,47 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
 import { useDemoMode } from '@/lib/demo-mode-context'
+import { createClient } from '@/lib/supabase/client'
+
 /* ------------------------------------------------------------------ */
-/*  Stub data                                                         */
+/*  Account-split helpers                                              */
 /* ------------------------------------------------------------------ */
 
-const STUB_CLIENT = {
-    client_id: 'c1',
-    name: 'Sarah Chen',
-    avatar_initials: 'SC',
-    portfolio_total: 47832.54,
-    accounts: [
-        { type: 'TFSA', balance: 24150.0, growth: 3.2 },
-        { type: 'RRSP', balance: 18340.0, growth: 1.8 },
-        { type: 'Cash', balance: 5342.54, growth: 0 },
-    ],
+const ACCOUNT_WEIGHTS: Record<string, number> = {
+    TFSA: 0.40, RRSP: 0.35, FHSA: 0.10, Cash: 0.10, Crypto: 0.05,
+}
+const ACCOUNT_GROWTH: Record<string, number> = {
+    TFSA: 3.2, RRSP: 1.8, FHSA: 2.4, Cash: 0, Crypto: 8.1,
 }
 
-const STUB_NOTIFICATIONS = [
-    {
-        notification_id: 'n1',
-        brief_id: 'b1',
-        client_id: 'c1',
-        headline: "We noticed something. Here's what it means for your money.",
-        status: 'delivered',
-        delivered_at: new Date(Date.now() - 46 * 60 * 1000).toISOString(),
-        opened_at: null as string | null,
-    },
-]
+/** Distribute portfolio_total across the client's account types. */
+function splitPortfolio(
+    accountTypes: string[],
+    total: number,
+): { type: string; balance: number; growth: number }[] {
+    if (!accountTypes.length) return []
+    const rawWeights = accountTypes.map((t) => ACCOUNT_WEIGHTS[t] ?? 0.1)
+    const sum = rawWeights.reduce((a, b) => a + b, 0)
+    return accountTypes.map((t, i) => ({
+        type: t,
+        balance: Math.round((rawWeights[i] / sum) * total * 100) / 100,
+        growth: ACCOUNT_GROWTH[t] ?? 0,
+    }))
+}
+
+/* ------------------------------------------------------------------ */
+/*  Stub / fallback data                                               */
+/* ------------------------------------------------------------------ */
+
+const STUB_NOTIFICATIONS: {
+    notification_id: string
+    brief_id: string
+    client_id: string
+    headline: string
+    status: string
+    delivered_at: string
+    opened_at: string | null
+}[] = []
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -312,7 +326,40 @@ function TaxIcon() {
 export default function ClientDashboard() {
     const router = useRouter()
     const { selectedClientId, selectedClientName } = useDemoMode()
-    const client = STUB_CLIENT
+
+    // ── Live client profile from Supabase ──
+    const [clientData, setClientData] = useState<{
+        portfolio_total: number
+        avatar_initials: string
+        accounts: { type: string; balance: number; growth: number }[]
+    } | null>(null)
+
+    useEffect(() => {
+        if (!selectedClientId) return
+        const load = async () => {
+            const supabase = createClient()
+            const { data, error } = await supabase
+                .from('clients')
+                .select('portfolio_total, avatar_initials, accounts')
+                .eq('id', selectedClientId)
+                .single()
+            if (error) {
+                console.error('[ClientDashboard] Failed to fetch client:', error.message)
+                return
+            }
+            if (data) {
+                const accountTypes: string[] = Array.isArray(data.accounts) ? data.accounts : []
+                setClientData({
+                    portfolio_total: data.portfolio_total ?? 0,
+                    avatar_initials: data.avatar_initials ?? '',
+                    accounts: splitPortfolio(accountTypes, data.portfolio_total ?? 0),
+                })
+            }
+        }
+        load()
+    }, [selectedClientId])
+
+    // ── Notifications from backend API ──
     const [notifications, setNotifications] = useState(STUB_NOTIFICATIONS)
 
     useEffect(() => {
@@ -322,14 +369,17 @@ export default function ClientDashboard() {
                 const result = await api.get(`/api/notifications?client_id=${selectedClientId}`) as any
                 if (result?.notifications) setNotifications(result.notifications)
             } catch (err) {
-                console.log('Using stub data for notifications:', err)
+                console.log('Notifications API unavailable:', err)
             }
         }
         load()
     }, [selectedClientId])
 
+    // ── Derived values ──
+    const portfolioTotal = clientData?.portfolio_total ?? 0
+    const accountCards = clientData?.accounts ?? []
     const unreadCount = notifications.filter(n => n.status === 'delivered' && !n.opened_at).length
-    const { dollars, cents } = formatCurrency(client.portfolio_total)
+    const { dollars, cents } = formatCurrency(portfolioTotal)
 
     // Live time
     const [timeStr, setTimeStr] = useState('')
@@ -390,7 +440,7 @@ export default function ClientDashboard() {
                     <div>
                         <div style={{ fontSize: 13, color: '#6B6867' }}>{getGreeting()}</div>
                         <div style={{ fontSize: 20, fontFamily: 'Georgia, serif', color: '#32302F', marginTop: 2 }}>
-                            {selectedClientName ? selectedClientName.split(' ')[0] : client.name.split(' ')[0]}
+                            {selectedClientName.split(' ')[0] || 'there'}
                         </div>
                     </div>
                     <div onClick={() => router.push('/client/notifications')}>
@@ -447,7 +497,7 @@ export default function ClientDashboard() {
                         msOverflowStyle: 'none',
                     }}
                 >
-                    {client.accounts.map((acc) => (
+                    {accountCards.map((acc) => (
                         <div
                             key={acc.type}
                             style={{

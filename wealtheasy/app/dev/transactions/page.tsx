@@ -10,6 +10,10 @@ import { createClient } from '@/lib/supabase/client'
 interface ClientRow {
     id: string
     name: string
+    portfolio_total: number | null
+    income_bracket: string
+    province: string
+    age: number
 }
 
 interface TransactionRow {
@@ -84,7 +88,7 @@ export default function DevTransactionsPage() {
     useEffect(() => {
         async function loadClients() {
             try {
-                const { data } = await supabase.from('clients').select('id, name').order('name')
+                const { data } = await supabase.from('clients').select('id, name, portfolio_total, income_bracket, province, age').order('name')
                 if (data) setClients(data)
             } catch (err) {
                 console.log('Failed to load clients:', err)
@@ -157,20 +161,50 @@ export default function DevTransactionsPage() {
             </div>
 
             {/* ---- Client filter ---- */}
-            <div style={{ marginTop: 16, marginBottom: 16 }}>
+            <div style={{ marginTop: 16, marginBottom: 8 }}>
                 <select
                     value={filterClient}
                     onChange={(e) => setFilterClient(e.target.value)}
-                    style={{ ...INPUT_STYLE, cursor: 'pointer', minWidth: 280 }}
+                    style={{ ...INPUT_STYLE, cursor: 'pointer', minWidth: 320 }}
                 >
                     <option value="">All clients</option>
                     {clients.map((c) => (
                         <option key={c.id} value={c.id}>
-                            {c.name}
+                            {c.name}{c.portfolio_total != null ? ` — $${c.portfolio_total.toLocaleString('en-CA')}` : ''}
                         </option>
                     ))}
                 </select>
             </div>
+
+            {/* ---- Selected client banner ---- */}
+            {filterClient && (() => {
+                const sel = clients.find((c) => c.id === filterClient)
+                if (!sel) return null
+                return (
+                    <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 20,
+                        background: '#1A1A1A',
+                        border: '1px solid #2A2A2A',
+                        borderRadius: 6,
+                        padding: '8px 16px',
+                        fontFamily: 'monospace',
+                        fontSize: 12,
+                        marginBottom: 16,
+                    }}>
+                        <span style={{ color: '#00C07B', fontWeight: 600 }}>{sel.name}</span>
+                        {sel.portfolio_total != null && (
+                            <span style={{ color: '#E0E0E0' }}>
+                                Portfolio: <span style={{ color: '#00C07B', fontWeight: 600 }}>
+                                    ${sel.portfolio_total.toLocaleString('en-CA')}
+                                </span>
+                            </span>
+                        )}
+                        <span style={{ color: '#6B6867' }}>{sel.age} · {sel.province} · {sel.income_bracket}</span>
+                    </div>
+                )
+            })()}
 
             {/* ---- Table ---- */}
             {loading ? (

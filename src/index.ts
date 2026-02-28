@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import express, { type Request, type Response } from 'express';
-import cors from 'cors';
 
 import { supabase } from './lib/supabase';
 import eventsRouter from './routes/events';
@@ -10,9 +9,6 @@ import clientRouter from './routes/client';
 import auditRouter from './routes/audit';
 
 const app = express();
-
-// CORS — allow Antoine's Next.js frontend to call Mo's Express API
-app.use(cors());
 
 // Global JSON body parsing middleware
 app.use(express.json());
