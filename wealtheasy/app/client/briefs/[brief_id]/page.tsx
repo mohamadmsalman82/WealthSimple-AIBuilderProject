@@ -254,24 +254,58 @@ export default function BriefDetailPage() {
     const params = useParams()
     const briefId = params.brief_id as string
     const { selectedClientId } = useDemoMode()
-    const [brief, setBrief] = useState(STUB_BRIEF)
-    const [isLoading, setIsLoading] = useState(false)
+    const [brief, setBrief] = useState<typeof STUB_BRIEF | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
         if (!selectedClientId) return
         const load = async () => {
             setIsLoading(true)
+            setError(null)
             try {
                 const result = await api.get(`/api/client/briefs/${briefId}?client_id=${selectedClientId}`) as any
-                if (result?.brief_id) setBrief(result)
-            } catch (err) {
-                console.log('Using stub data for client brief:', err)
+                console.log('[BriefDetail] API response for brief', briefId, ':', JSON.stringify(result).substring(0, 300))
+                if (result?.brief_id) {
+                    setBrief(result)
+                } else {
+                    console.error('[BriefDetail] Unexpected response shape:', result)
+                    setError('Brief data could not be loaded')
+                }
+            } catch (err: any) {
+                console.error('[BriefDetail] Failed to load brief', briefId, ':', err?.message ?? err)
+                setError(err?.message ?? 'Failed to load brief')
             } finally {
                 setIsLoading(false)
             }
         }
         load()
     }, [briefId, selectedClientId])
+
+    if (isLoading) {
+        return (
+            <div style={{ maxWidth: 390, background: '#FFFFFF', minHeight: '100%', fontFamily: "'DM Sans', sans-serif" }}>
+                <div style={{ padding: '16px 20px' }}>
+                    <Link href="/client/notifications" style={{ fontSize: 20, color: '#32302F', textDecoration: 'none', lineHeight: 1 }}>←</Link>
+                </div>
+                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6B6867', fontSize: 14 }}>Loading brief…</div>
+            </div>
+        )
+    }
+
+    if (error || !brief) {
+        return (
+            <div style={{ maxWidth: 390, background: '#FFFFFF', minHeight: '100%', fontFamily: "'DM Sans', sans-serif" }}>
+                <div style={{ padding: '16px 20px' }}>
+                    <Link href="/client/notifications" style={{ fontSize: 20, color: '#32302F', textDecoration: 'none', lineHeight: 1 }}>←</Link>
+                </div>
+                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+                    <div style={{ fontSize: 16, color: '#32302F', fontFamily: 'Georgia, serif' }}>Could not load brief</div>
+                    <div style={{ fontSize: 13, color: '#6B6867', marginTop: 8 }}>{error ?? 'No data returned from server'}</div>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <div
