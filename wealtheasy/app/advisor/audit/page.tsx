@@ -194,9 +194,11 @@ function formatTimestamp(iso: string): { date: string; time: string } {
     return { date, time: `${h12}:${mins} ${ampm}` }
 }
 
-function truncateId(id: string): string {
+function truncateId(id: string | null): string {
+    if (!id) return '—'
     return id.length > 8 ? id.slice(0, 8) + '…' : id
 }
+
 
 function renderMetadataInline(meta: Record<string, unknown>): React.ReactNode {
     const parts: React.ReactNode[] = []
