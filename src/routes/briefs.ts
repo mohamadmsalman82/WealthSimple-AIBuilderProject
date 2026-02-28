@@ -165,7 +165,6 @@ router.post('/:brief_id/approve', async (req: Request, res: Response) => {
         content: edited_content,
         final_content_hash: finalHash,
         was_edited: wasEdited,
-        advisor_id,
         approved_at: approvedAt,
       })
       .eq('id', brief_id);
@@ -193,7 +192,6 @@ router.post('/:brief_id/approve', async (req: Request, res: Response) => {
     }
 
     await logAudit({
-      actor_id: advisor_id,
       actor_type: 'advisor',
       action: 'brief_approved',
       record_type: 'brief',
@@ -258,7 +256,6 @@ router.post('/:brief_id/reject', async (req: Request, res: Response) => {
       .update({
         status: 'rejected',
         rejection_reason,
-        advisor_id,
         rejected_at: rejectedAt,
       })
       .eq('id', brief_id)
@@ -274,7 +271,6 @@ router.post('/:brief_id/reject', async (req: Request, res: Response) => {
     }
 
     await logAudit({
-      actor_id: advisor_id,
       actor_type: 'advisor',
       action: 'brief_rejected',
       record_type: 'brief',
@@ -317,7 +313,6 @@ router.post('/:brief_id/flag', async (req: Request, res: Response) => {
       .update({
         status: 'flagged',
         flag_reason,
-        advisor_id,
         flagged_at: flaggedAt,
       })
       .eq('id', brief_id)
@@ -333,7 +328,6 @@ router.post('/:brief_id/flag', async (req: Request, res: Response) => {
     }
 
     await logAudit({
-      actor_id: advisor_id,
       actor_type: 'advisor',
       action: 'brief_flagged',
       record_type: 'brief',

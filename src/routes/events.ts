@@ -265,7 +265,6 @@ router.post('/:event_id/classify', async (req: Request, res: Response) => {
         .update({
           status: 'routed',
           resolved_at: resolvedAt,
-          advisor_id,
         })
         .eq('id', event_id);
 
@@ -274,11 +273,10 @@ router.post('/:event_id/classify', async (req: Request, res: Response) => {
       }
 
       await logAudit({
-        actor_id: advisor_id,
         actor_type: 'advisor',
         action: 'event_classified',
         record_type: 'event',
-      record_id: String(event_id),
+        record_id: String(event_id),
         client_id: eventRecord.client_id,
         metadata: {
           advisor_id,
@@ -319,7 +317,6 @@ router.post('/:event_id/classify', async (req: Request, res: Response) => {
       .update({
         status,
         resolved_at: resolvedAt,
-        advisor_id,
       })
       .eq('id', event_id);
 
@@ -328,7 +325,6 @@ router.post('/:event_id/classify', async (req: Request, res: Response) => {
     }
 
     await logAudit({
-      actor_id: advisor_id,
       actor_type: 'advisor',
       action: decision === 'dismiss' ? 'event_dismissed' : 'event_escalated',
       record_type: 'event',
