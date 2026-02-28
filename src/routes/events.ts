@@ -36,13 +36,19 @@ function parsePositiveInt(input: unknown, fallback: number): number {
 }
 
 router.post('/', async (req: Request, res: Response) => {
-  const { client_id, event_type, source } = req.body as {
+  const { client_id, event_type, source, confidence_score: rawConfidence, signal_summary } = req.body as {
     client_id?: string;
     event_type?: string;
     source?: string;
+    confidence_score?: number;
+    signal_summary?: string;
   };
 
-  if (!client_id || !event_type || source !== 'self_reported') {
+  if (!client_id || !event_type) {
+    return res.status(400).json({ error: 'Invalid request payload' });
+  }
+
+  if (source !== 'self_reported' && source !== 'account_signal') {
     return res.status(400).json({ error: 'Invalid request payload' });
   }
 
@@ -50,7 +56,11 @@ router.post('/', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid event_type' });
   }
 
-  const confidence_score = 0.95;
+  const confidence_score =
+    source === 'account_signal' && typeof rawConfidence === 'number'
+      ? rawConfidence
+      : 0.95;
+
   const classification = classifyEvent({
     event_type: event_type as EventType,
     confidence_score,
@@ -69,9 +79,10 @@ router.post('/', async (req: Request, res: Response) => {
       .insert({
         client_id,
         event_type,
-        source: 'self_reported',
+        source,
         confidence_score,
         risk_tier: classification.risk_tier,
+        signal_summary: source === 'account_signal' ? (signal_summary ?? null) : null,
         status,
       })
       .select('id')
@@ -88,15 +99,15 @@ router.post('/', async (req: Request, res: Response) => {
     const eventId = eventRecord.id as string;
 
     await logAudit({
-      actor_id: client_id,
-      actor_type: 'client',
+      actor_id: source === 'self_reported' ? client_id : undefined,
+      actor_type: source === 'self_reported' ? 'client' : 'system',
       action: 'event_created',
       record_type: 'event',
       record_id: eventId,
       client_id,
       metadata: {
         event_type,
-        source: 'self_reported',
+        source,
         confidence_score,
       },
     });

@@ -109,7 +109,7 @@ function ActionCard({
         if (newVal) {
             try {
                 const res = await api.post(`/api/client/briefs/${briefId}/actions`, {
-                    client_id: 'c1',
+                    client_id: 'ae66133f-8eb4-4165-af1a-fd98e8553db9',
                     action_rank: action.rank,
                     client_action: newVal,
                 })
@@ -257,7 +257,7 @@ export default function BriefDetailPage() {
         const load = async () => {
             setIsLoading(true)
             try {
-                const result = await api.get(`/api/client/briefs/${briefId}`) as any
+                const result = await api.get(`/api/client/briefs/${briefId}?client_id=ae66133f-8eb4-4165-af1a-fd98e8553db9`) as any
                 if (result?.brief_id) setBrief(result)
             } catch (err) {
                 console.log('Using stub data for client brief:', err)

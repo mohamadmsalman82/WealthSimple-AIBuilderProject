@@ -57,10 +57,9 @@ export default function LifeEventPage() {
         setIsSubmitting(true)
         try {
             const res = await api.post('/api/events', {
-                client_id: 'c1',
+                client_id: 'ae66133f-8eb4-4165-af1a-fd98e8553db9',
                 event_type: selected,
                 source: 'self_reported',
-                signal_summary: null,
             })
             console.log('Event submitted:', res)
         } catch {
