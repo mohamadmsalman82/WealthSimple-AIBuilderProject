@@ -252,7 +252,7 @@ export default function BriefReviewPage() {
     const handleApprove = async () => {
         setApproving(true)
         try {
-            const body = {
+            const response = await api.post(`/api/briefs/${briefId}/approve`, {
                 advisor_id: 'advisor-demo',
                 edited_content: {
                     summary,
@@ -264,12 +264,12 @@ export default function BriefReviewPage() {
                         cta_link: a.cta_link,
                     })),
                 },
-            }
-            const res = await api.post(`/api/briefs/${briefId}/approve`, body)
-            console.log('Approve response:', res)
+            })
+            console.log('Approve success:', response)
             router.push('/advisor/queue')
-        } catch (err) {
-            console.error('Approve error (expected — API not running):', err)
+        } catch (err: any) {
+            console.error('Approve failed:', err.message)
+        } finally {
             setApproving(false)
         }
     }
