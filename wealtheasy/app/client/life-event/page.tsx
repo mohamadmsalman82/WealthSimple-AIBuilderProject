@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { useDemoMode } from '@/lib/demo-mode-context'
 
 /* ------------------------------------------------------------------ */
 /*  Event definitions                                                 */
@@ -45,6 +46,7 @@ const EVENT_MESSAGES: Record<string, string> = {
 
 export default function LifeEventPage() {
     const router = useRouter()
+    const { selectedClientId } = useDemoMode()
     const [selected, setSelected] = useState<string | null>(null)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [isSubmitted, setIsSubmitted] = useState(false)
@@ -57,7 +59,7 @@ export default function LifeEventPage() {
         setIsSubmitting(true)
         try {
             const res = await api.post('/api/events', {
-                client_id: 'ae66133f-8eb4-4165-af1a-fd98e8553db9',
+                client_id: selectedClientId,
                 event_type: selected,
                 source: 'self_reported',
             })

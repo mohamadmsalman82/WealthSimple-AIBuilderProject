@@ -3,7 +3,7 @@ import { ReactNode } from 'react'
 import { useDemoMode } from '@/lib/demo-mode-context'
 
 export default function PhoneFrame({ children }: { children: ReactNode }) {
-    const { demoMode } = useDemoMode()
+    const { demoMode, selectedClientId, selectedClientName, setSelectedClient, clientOptions } = useDemoMode()
 
     if (!demoMode) {
         return <>{children}</>
@@ -49,7 +49,57 @@ export default function PhoneFrame({ children }: { children: ReactNode }) {
                 />
 
                 {/* Content area — below the notch */}
-                <div style={{ paddingTop: 44 }}>{children}</div>
+                <div style={{ paddingTop: 44 }}>
+                    {/* Client switcher bar */}
+                    {demoMode && clientOptions.length > 0 && (
+                        <div
+                            style={{
+                                background: '#F7F6F4',
+                                padding: '6px 16px',
+                                borderBottom: '1px solid #EBEBEB',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8,
+                            }}
+                        >
+                            <span
+                                style={{
+                                    color: '#6B6867',
+                                    fontSize: 11,
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                Viewing as
+                            </span>
+                            <select
+                                value={selectedClientId}
+                                onChange={(e) => {
+                                    const option = clientOptions.find(c => c.id === e.target.value)
+                                    if (option) {
+                                        setSelectedClient(option.id, option.name)
+                                    }
+                                }}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    fontSize: 11,
+                                    color: '#00C07B',
+                                    fontWeight: 500,
+                                    cursor: 'pointer',
+                                    outline: 'none',
+                                    fontFamily: "'DM Sans', sans-serif",
+                                }}
+                            >
+                                {clientOptions.map((c) => (
+                                    <option key={c.id} value={c.id}>
+                                        {c.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
+                    )}
+                    {children}
+                </div>
             </div>
         </div>
     )

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/lib/api'
+import { useDemoMode } from '@/lib/demo-mode-context'
 
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
@@ -92,10 +93,12 @@ function ActionCard({
     action,
     index,
     briefId,
+    clientId,
 }: {
     action: (typeof STUB_BRIEF.content.actions)[number]
     index: number
     briefId: string
+    clientId: string
 }) {
     const router = useRouter()
     const [selected, setSelected] = useState<ClientAction | null>(
@@ -109,7 +112,7 @@ function ActionCard({
         if (newVal) {
             try {
                 const res = await api.post(`/api/client/briefs/${briefId}/actions`, {
-                    client_id: 'ae66133f-8eb4-4165-af1a-fd98e8553db9',
+                    client_id: clientId,
                     action_rank: action.rank,
                     client_action: newVal,
                 })
@@ -250,14 +253,16 @@ function ActionCard({
 export default function BriefDetailPage() {
     const params = useParams()
     const briefId = params.brief_id as string
+    const { selectedClientId } = useDemoMode()
     const [brief, setBrief] = useState(STUB_BRIEF)
     const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
+        if (!selectedClientId) return
         const load = async () => {
             setIsLoading(true)
             try {
-                const result = await api.get(`/api/client/briefs/${briefId}?client_id=ae66133f-8eb4-4165-af1a-fd98e8553db9`) as any
+                const result = await api.get(`/api/client/briefs/${briefId}?client_id=${selectedClientId}`) as any
                 if (result?.brief_id) setBrief(result)
             } catch (err) {
                 console.log('Using stub data for client brief:', err)
@@ -266,7 +271,7 @@ export default function BriefDetailPage() {
             }
         }
         load()
-    }, [briefId])
+    }, [briefId, selectedClientId])
 
     return (
         <div
@@ -379,6 +384,7 @@ export default function BriefDetailPage() {
                             action={action}
                             index={idx}
                             briefId={brief.brief_id}
+                            clientId={selectedClientId}
                         />
                     ))}
                 </div>

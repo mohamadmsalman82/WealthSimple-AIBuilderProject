@@ -4,12 +4,13 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
+import { useDemoMode } from '@/lib/demo-mode-context'
 
 /* ------------------------------------------------------------------ */
-/*  Stub data                                                         */
+/*  Stub data (kept for reference, no longer used for init)           */
 /* ------------------------------------------------------------------ */
 
-const STUB_NOTIFICATIONS = [
+const INITIAL_NOTIFICATIONS = [
     {
         notification_id: 'n1',
         brief_id: 'b1',
@@ -30,7 +31,7 @@ const STUB_NOTIFICATIONS = [
     },
 ]
 
-type NotifStub = (typeof STUB_NOTIFICATIONS)[number]
+type NotifStub = (typeof INITIAL_NOTIFICATIONS)[number]
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -46,12 +47,12 @@ function formatTimeSince(iso: string): string {
     return `${diffDays} day${diffDays !== 1 ? 's' : ''} ago`
 }
 
-function groupByRecency(notifs: NotifStub[]): { label: string; items: NotifStub[] }[] {
+function groupByRecency(notifs: any[]): { label: string; items: any[] }[] {
     const now = Date.now()
     const dayMs = 24 * 60 * 60 * 1000
-    const today: NotifStub[] = []
-    const thisWeek: NotifStub[] = []
-    const earlier: NotifStub[] = []
+    const today: any[] = []
+    const thisWeek: any[] = []
+    const earlier: any[] = []
 
     notifs.forEach((n) => {
         const age = now - new Date(n.delivered_at).getTime()
@@ -60,7 +61,7 @@ function groupByRecency(notifs: NotifStub[]): { label: string; items: NotifStub[
         else earlier.push(n)
     })
 
-    const groups: { label: string; items: NotifStub[] }[] = []
+    const groups: { label: string; items: any[] }[] = []
     if (today.length) groups.push({ label: 'Today', items: today })
     if (thisWeek.length) groups.push({ label: 'This week', items: thisWeek })
     if (earlier.length) groups.push({ label: 'Earlier', items: earlier })
@@ -73,23 +74,31 @@ function groupByRecency(notifs: NotifStub[]): { label: string; items: NotifStub[
 
 export default function NotificationsPage() {
     const router = useRouter()
-    const [notifications, setNotifications] = useState(STUB_NOTIFICATIONS)
+    const { selectedClientId } = useDemoMode()
+    const [notifications, setNotifications] = useState<any[]>([])
     const [isLoading, setIsLoading] = useState(false)
 
     useEffect(() => {
         const load = async () => {
             setIsLoading(true)
             try {
-                const result = await api.get('/api/notifications?client_id=ae66133f-8eb4-4165-af1a-fd98e8553db9') as any
-                if (result?.notifications) setNotifications(result.notifications)
-            } catch (err) {
-                console.log('Using stub data for notifications:', err)
+                const result = await api.get(`/api/notifications?client_id=${selectedClientId}`) as any
+                console.log('Notifications raw result:', JSON.stringify(result))
+                console.log('Notifications array:', result?.notifications)
+                if (result?.notifications && result.notifications.length > 0) {
+                    setNotifications(result.notifications)
+                    console.log('Set notifications to real data:', result.notifications.length, 'items')
+                } else {
+                    console.log('No notifications in result — keeping stub')
+                }
+            } catch (err: any) {
+                console.log('Notifications API failed:', err?.message)
             } finally {
                 setIsLoading(false)
             }
         }
-        load()
-    }, [])
+        if (selectedClientId) load()
+    }, [selectedClientId])
 
     const markAllRead = () => {
         // TODO: call PATCH /api/notifications when Mo adds that route
@@ -102,7 +111,7 @@ export default function NotificationsPage() {
         )
     }
 
-    const handleTap = (notif: NotifStub) => {
+    const handleTap = (notif: any) => {
         // Mark as read
         setNotifications((prev) =>
             prev.map((n) =>
@@ -165,6 +174,11 @@ export default function NotificationsPage() {
 
             {/* ---- Notification list ---- */}
             <div style={{ padding: '0 16px', flex: 1 }}>
+                {isLoading && notifications.length === 0 && (
+                    <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B6867', fontSize: 14 }}>
+                        Loading notifications...
+                    </div>
+                )}
                 {notifications.length === 0 ? (
                     /* ---- Empty state ---- */
                     <div

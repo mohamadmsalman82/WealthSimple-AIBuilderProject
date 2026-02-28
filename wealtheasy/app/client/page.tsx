@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import { useDemoMode } from '@/lib/demo-mode-context'
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
 /* ------------------------------------------------------------------ */
@@ -310,20 +311,22 @@ function TaxIcon() {
 
 export default function ClientDashboard() {
     const router = useRouter()
+    const { selectedClientId, selectedClientName } = useDemoMode()
     const client = STUB_CLIENT
     const [notifications, setNotifications] = useState(STUB_NOTIFICATIONS)
 
     useEffect(() => {
+        if (!selectedClientId) return
         const load = async () => {
             try {
-                const result = await api.get('/api/notifications?client_id=ae66133f-8eb4-4165-af1a-fd98e8553db9') as any
+                const result = await api.get(`/api/notifications?client_id=${selectedClientId}`) as any
                 if (result?.notifications) setNotifications(result.notifications)
             } catch (err) {
                 console.log('Using stub data for notifications:', err)
             }
         }
         load()
-    }, [])
+    }, [selectedClientId])
 
     const unreadCount = notifications.filter(n => n.status === 'delivered' && !n.opened_at).length
     const { dollars, cents } = formatCurrency(client.portfolio_total)
@@ -387,7 +390,7 @@ export default function ClientDashboard() {
                     <div>
                         <div style={{ fontSize: 13, color: '#6B6867' }}>{getGreeting()}</div>
                         <div style={{ fontSize: 20, fontFamily: 'Georgia, serif', color: '#32302F', marginTop: 2 }}>
-                            {client.name.split(' ')[0]}
+                            {selectedClientName ? selectedClientName.split(' ')[0] : client.name.split(' ')[0]}
                         </div>
                     </div>
                     <div onClick={() => router.push('/client/notifications')}>
