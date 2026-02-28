@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { api } from '@/lib/api'
+import { useDemoMode } from '@/lib/demo-mode-context'
 
 /* ------------------------------------------------------------------ */
 /*  Stub data                                                         */
@@ -92,10 +93,12 @@ function ActionCard({
     action,
     index,
     briefId,
+    clientId,
 }: {
-    action: (typeof STUB_BRIEF.content.actions)[number]
+    action: { rank: number; title: string; explanation: string; cta_label: string; cta_link: string; client_action: string | null }
     index: number
     briefId: string
+    clientId: string
 }) {
     const router = useRouter()
     const [selected, setSelected] = useState<ClientAction | null>(
@@ -109,7 +112,7 @@ function ActionCard({
         if (newVal) {
             try {
                 const res = await api.post(`/api/client/briefs/${briefId}/actions`, {
-                    client_id: 'c1',
+                    client_id: clientId,
                     action_rank: action.rank,
                     client_action: newVal,
                 })
@@ -250,23 +253,50 @@ function ActionCard({
 export default function BriefDetailPage() {
     const params = useParams()
     const briefId = params.brief_id as string
-    const [brief, setBrief] = useState(STUB_BRIEF)
-    const [isLoading, setIsLoading] = useState(false)
+    const { selectedClientId } = useDemoMode()
+    const [brief, setBrief] = useState<any | null>(null)
+    const [isLoading, setIsLoading] = useState(true)
+    const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
+        if (!selectedClientId) {
+            setIsLoading(false)
+            setError('No client selected.')
+            return
+        }
         const load = async () => {
             setIsLoading(true)
+            setError(null)
             try {
-                const result = await api.get(`/api/client/briefs/${briefId}`) as any
-                if (result?.brief_id) setBrief(result)
-            } catch (err) {
-                console.log('Using stub data for client brief:', err)
+                const result = await api.get(`/api/client/briefs/${briefId}?client_id=${selectedClientId}`) as any
+                if (result?.brief_id) {
+                    setBrief(result)
+                } else {
+                    setError('Brief not found or invalid response.')
+                    setBrief(null)
+                }
+            } catch (err: any) {
+                console.error('[BriefDetail] Failed to load brief:', err?.message ?? err)
+                setError(err?.message ?? 'Failed to load brief')
+                setBrief(null)
             } finally {
                 setIsLoading(false)
             }
         }
         load()
-    }, [briefId])
+    }, [briefId, selectedClientId])
+
+    if (isLoading) {
+        return <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B6867', fontSize: 14 }}>Loading brief...</div>
+    }
+
+    if (error) {
+        return <div style={{ textAlign: 'center', padding: '40px 0', color: '#E8443A', fontSize: 14 }}>Error: {error}</div>
+    }
+
+    if (!brief) {
+        return <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B6867', fontSize: 14 }}>Brief not found.</div>
+    }
 
     return (
         <div
@@ -373,12 +403,13 @@ export default function BriefDetailPage() {
                     Your next steps
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {brief.content.actions.map((action, idx) => (
+                    {brief.content.actions.map((action: any, idx: number) => (
                         <ActionCard
                             key={action.rank}
                             action={action}
                             index={idx}
                             briefId={brief.brief_id}
+                            clientId={selectedClientId}
                         />
                     ))}
                 </div>
