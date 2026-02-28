@@ -55,6 +55,24 @@ interface LogEntry {
     eventType: string
 }
 
+interface ScanResult {
+    client_id: string
+    client_name: string
+    event_type: string
+    confidence_score: number
+    status: string
+    event_id: string | null
+    skipped: boolean
+}
+
+interface ScanResponse {
+    message: string
+    clients_scanned: number
+    signals_detected: number
+    events_created: number
+    results: ScanResult[]
+}
+
 /* ------------------------------------------------------------------ */
 /*  Main page                                                         */
 /* ------------------------------------------------------------------ */
@@ -69,6 +87,11 @@ export default function DevSignalPage() {
     const [isFiring, setIsFiring] = useState(false)
     const [result, setResult] = useState<string | null>(null)
     const [sessionLog, setSessionLog] = useState<LogEntry[]>([])
+
+    // Account Monitor scan state
+    const [isScanning, setIsScanning] = useState(false)
+    const [scanResult, setScanResult] = useState<ScanResponse | null>(null)
+    const [scanError, setScanError] = useState<string | null>(null)
 
     // Load clients
     useEffect(() => {
@@ -90,6 +113,21 @@ export default function DevSignalPage() {
 
     const selectedClientObj = clients.find((c) => c.id === selectedClient)
     const canFire = selectedClient !== '' && selectedEvent !== null
+
+    // ---- Account Monitor Scan handler ----
+    const handleScan = useCallback(async () => {
+        setIsScanning(true)
+        setScanResult(null)
+        setScanError(null)
+        try {
+            const res = await api.post('/api/signals/scan', {}) as ScanResponse
+            setScanResult(res)
+        } catch (err: any) {
+            setScanError(err?.message ?? 'Scan failed — is the backend running?')
+        } finally {
+            setIsScanning(false)
+        }
+    }, [])
 
     const handleFire = useCallback(async () => {
         if (!canFire || !selectedEvent) return
@@ -135,9 +173,193 @@ export default function DevSignalPage() {
 
     return (
         <div>
+            {/* ============================================================ */}
+            {/*  ACCOUNT SIGNAL MONITOR — AUTO SCAN                          */}
+            {/* ============================================================ */}
+            <div
+                style={{
+                    background: '#1A1A1A',
+                    border: '1px solid #2A2A2A',
+                    borderRadius: 10,
+                    padding: 24,
+                    marginBottom: 32,
+                }}
+            >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                    <span style={{ fontSize: 18, lineHeight: 1 }}>📡</span>
+                    <span style={{ fontSize: 11, color: '#00C07B', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        ACCOUNT SIGNAL MONITOR
+                    </span>
+                </div>
+                <div style={{ fontSize: 14, color: '#E0E0E0', fontFamily: 'monospace', marginBottom: 6 }}>
+                    Scan all client transactions for life event patterns
+                </div>
+                <div style={{ fontSize: 12, color: '#6B6867', fontFamily: 'monospace', marginBottom: 16, lineHeight: 1.6 }}>
+                    Runs 6 detectors (new baby, new job, lump sum deposit, debt payoff, home purchase, inheritance)
+                    against every client&apos;s transaction history. Detected signals are classified and routed automatically.
+                    Duplicate signals are skipped.
+                </div>
+
+                <button
+                    onClick={handleScan}
+                    disabled={isScanning}
+                    style={{
+                        background: isScanning ? '#2A2A2A' : '#00C07B',
+                        color: isScanning ? '#6B6867' : '#0F0F0F',
+                        border: 'none',
+                        borderRadius: 6,
+                        padding: '12px 28px',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        fontFamily: 'monospace',
+                        cursor: isScanning ? 'not-allowed' : 'pointer',
+                        opacity: isScanning ? 0.7 : 1,
+                        transition: 'all 150ms ease',
+                    }}
+                >
+                    {isScanning ? '⏳ Scanning transactions...' : '📡 Run Account Monitor'}
+                </button>
+
+                {/* Scan error */}
+                {scanError && (
+                    <div
+                        style={{
+                            marginTop: 14,
+                            padding: '10px 14px',
+                            background: 'rgba(232,68,58,0.1)',
+                            border: '1px solid rgba(232,68,58,0.3)',
+                            borderRadius: 6,
+                            fontSize: 13,
+                            fontFamily: 'monospace',
+                            color: '#E8443A',
+                        }}
+                    >
+                        {scanError}
+                    </div>
+                )}
+
+                {/* Scan results */}
+                {scanResult && (
+                    <div style={{ marginTop: 16 }}>
+                        {/* Summary banner */}
+                        <div
+                            style={{
+                                display: 'flex',
+                                gap: 24,
+                                marginBottom: 14,
+                                flexWrap: 'wrap',
+                            }}
+                        >
+                            {[
+                                { label: 'Clients Scanned', value: scanResult.clients_scanned, color: '#E0E0E0' },
+                                { label: 'Signals Detected', value: scanResult.signals_detected, color: '#00C07B' },
+                                { label: 'Events Created', value: scanResult.events_created, color: '#00C07B' },
+                                { label: 'Duplicates Skipped', value: scanResult.results.filter((r) => r.skipped).length, color: '#6B6867' },
+                            ].map((stat) => (
+                                <div key={stat.label} style={{ fontFamily: 'monospace' }}>
+                                    <div style={{ fontSize: 22, color: stat.color, fontWeight: 700 }}>{stat.value}</div>
+                                    <div style={{ fontSize: 11, color: '#6B6867', marginTop: 2 }}>{stat.label}</div>
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Individual results */}
+                        {scanResult.results.length > 0 && (
+                            <div
+                                style={{
+                                    background: '#0F0F0F',
+                                    border: '1px solid #2A2A2A',
+                                    borderRadius: 6,
+                                    overflow: 'hidden',
+                                }}
+                            >
+                                {/* Header */}
+                                <div
+                                    style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '1fr 140px 80px 120px',
+                                        padding: '8px 12px',
+                                        borderBottom: '1px solid #2A2A2A',
+                                        fontSize: 10,
+                                        color: '#6B6867',
+                                        fontFamily: 'monospace',
+                                        textTransform: 'uppercase',
+                                        letterSpacing: '0.05em',
+                                    }}
+                                >
+                                    <span>CLIENT</span>
+                                    <span>EVENT TYPE</span>
+                                    <span>CONF.</span>
+                                    <span>STATUS</span>
+                                </div>
+
+                                {/* Rows */}
+                                {scanResult.results.map((r, i) => {
+                                    const statusColor =
+                                        r.status === 'routed' ? '#00C07B'
+                                            : r.status === 'held' || r.status === 'pending_classification' ? '#F5A623'
+                                                : r.skipped ? '#4A4A4A'
+                                                    : '#E8443A'
+                                    const statusLabel =
+                                        r.status === 'skipped_duplicate' ? 'duplicate'
+                                            : r.status === 'insert_error' ? 'error'
+                                                : r.status
+                                    return (
+                                        <div
+                                            key={i}
+                                            style={{
+                                                display: 'grid',
+                                                gridTemplateColumns: '1fr 140px 80px 120px',
+                                                padding: '8px 12px',
+                                                borderBottom: i === scanResult.results.length - 1 ? 'none' : '1px solid #1A1A1A',
+                                                fontSize: 12,
+                                                fontFamily: 'monospace',
+                                                opacity: r.skipped ? 0.5 : 1,
+                                            }}
+                                        >
+                                            <span style={{ color: '#E0E0E0' }}>{r.client_name}</span>
+                                            <span style={{ color: '#00C07B' }}>{r.event_type}</span>
+                                            <span style={{ color: '#E0E0E0' }}>{r.confidence_score.toFixed(2)}</span>
+                                            <span style={{ color: statusColor, fontWeight: 500 }}>{statusLabel}</span>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        )}
+
+                        {scanResult.results.length === 0 && scanResult.clients_scanned > 0 && (
+                            <div style={{ fontSize: 13, color: '#6B6867', fontFamily: 'monospace' }}>
+                                No patterns detected in current transaction data.
+                            </div>
+                        )}
+
+                        {/* Clear button */}
+                        <button
+                            onClick={() => setScanResult(null)}
+                            style={{
+                                marginTop: 12,
+                                background: 'none',
+                                border: 'none',
+                                color: '#6B6867',
+                                fontFamily: 'monospace',
+                                fontSize: 11,
+                                cursor: 'pointer',
+                                padding: '4px 0',
+                            }}
+                        >
+                            Clear results
+                        </button>
+                    </div>
+                )}
+            </div>
+
+            {/* ============================================================ */}
+            {/*  MANUAL SIGNAL TRIGGER (existing)                            */}
+            {/* ============================================================ */}
+
             {/* ---- Title ---- */}
             <div style={{ fontSize: 11, color: '#6B6867', fontFamily: 'monospace', textTransform: 'uppercase' }}>
-        // SIGNAL TRIGGER
+        // MANUAL SIGNAL TRIGGER
             </div>
             <div style={{ fontSize: 20, color: '#E0E0E0', fontFamily: 'monospace', marginTop: 4 }}>
                 Fire a life event signal for any client

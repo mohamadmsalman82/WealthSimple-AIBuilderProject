@@ -8,10 +8,11 @@ import briefsRouter from './routes/briefs';
 import notificationsRouter from './routes/notifications';
 import clientRouter from './routes/client';
 import auditRouter from './routes/audit';
+import signalsRouter from './routes/signals';
 
 const app = express();
 
-// CORS — allow Antoine's Next.js frontend to call Mo's Express API
+// CORS — allow the Next.js frontend (port 3001) to call the Express API (port 3000)
 app.use(cors());
 
 // Global JSON body parsing middleware
@@ -87,6 +88,7 @@ app.use('/api/briefs', briefsRouter);
 app.use('/api/notifications', notificationsRouter);
 app.use('/api/client', clientRouter);
 app.use('/api/audit', auditRouter);
+app.use('/api/signals', signalsRouter);
 
 const port = process.env.PORT ? Number(process.env.PORT) : 3000;
 

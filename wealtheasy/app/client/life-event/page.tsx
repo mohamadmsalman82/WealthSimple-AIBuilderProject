@@ -55,7 +55,7 @@ export default function LifeEventPage() {
     const selectedEvent = LIFE_EVENTS.find((e) => e.type === selected)
 
     const handleSubmit = async () => {
-        if (!selected) return
+        if (!selected || !selectedClientId) return
         setIsSubmitting(true)
         try {
             const res = await api.post('/api/events', {
@@ -64,8 +64,8 @@ export default function LifeEventPage() {
                 source: 'self_reported',
             })
             console.log('Event submitted:', res)
-        } catch {
-            console.log('API not available yet, proceeding to success state')
+        } catch (err) {
+            console.error('Event submission failed:', err)
         }
         setIsSubmitting(false)
         setIsSubmitted(true)

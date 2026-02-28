@@ -8,11 +8,11 @@ interface RejectModalProps {
 }
 
 const REASONS = [
-    { value: 'misclassified_event', label: 'Misclassified event' },
-    { value: 'wrong_client_context', label: 'Wrong client context' },
-    { value: 'outdated_rules', label: 'Outdated rules' },
-    { value: 'tone_inappropriate', label: 'Tone inappropriate' },
-    { value: 'other', label: 'Other' },
+    'Misclassified event',
+    'Wrong client context',
+    'Outdated rules',
+    'Tone inappropriate',
+    'Other',
 ]
 
 export default function RejectModal({ briefId, onClose, onConfirm }: RejectModalProps) {
@@ -86,11 +86,11 @@ export default function RejectModal({ briefId, onClose, onConfirm }: RejectModal
                 {/* Reason pills */}
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 24 }}>
                     {REASONS.map((reason) => {
-                        const isSelected = selected === reason.value
+                        const isSelected = selected === reason
                         return (
                             <button
-                                key={reason.value}
-                                onClick={() => setSelected(reason.value)}
+                                key={reason}
+                                onClick={() => setSelected(reason)}
                                 style={{
                                     padding: '8px 16px',
                                     borderRadius: 100,
@@ -104,7 +104,7 @@ export default function RejectModal({ briefId, onClose, onConfirm }: RejectModal
                                     transition: 'all 150ms ease',
                                 }}
                             >
-                                {reason.label}
+                                {reason}
                             </button>
                         )
                     })}

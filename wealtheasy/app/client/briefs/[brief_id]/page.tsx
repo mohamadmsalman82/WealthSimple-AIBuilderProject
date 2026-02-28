@@ -95,7 +95,7 @@ function ActionCard({
     briefId,
     clientId,
 }: {
-    action: (typeof STUB_BRIEF.content.actions)[number]
+    action: { rank: number; title: string; explanation: string; cta_label: string; cta_link: string; client_action: string | null }
     index: number
     briefId: string
     clientId: string
@@ -254,41 +254,31 @@ export default function BriefDetailPage() {
     const params = useParams()
     const briefId = params.brief_id as string
     const { selectedClientId } = useDemoMode()
-    const [brief, setBrief] = useState<typeof STUB_BRIEF | null>(null)
+    const [brief, setBrief] = useState<any | null>(null)
     const [isLoading, setIsLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
 
     useEffect(() => {
-        if (!selectedClientId) return
+        if (!selectedClientId) {
+            setIsLoading(false)
+            setError('No client selected.')
+            return
+        }
         const load = async () => {
             setIsLoading(true)
             setError(null)
             try {
-                // Temporary debug fetch — replace api.get with raw fetch
-                const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/client/briefs/${briefId}?client_id=${selectedClientId}`)
-                console.log('[BriefDetail] Response status:', res.status)
-                console.log('[BriefDetail] Response headers:', Object.fromEntries(res.headers.entries()))
-                const text = await res.text()
-                console.log('[BriefDetail] Raw response body:', text)
-
-                if (!res.ok) {
-                    throw new Error(`HTTP ${res.status}: ${text}`)
-                }
-
-                const result = JSON.parse(text)
-                console.log('[BriefDetail] Parsed result:', JSON.stringify(result))
-
+                const result = await api.get(`/api/client/briefs/${briefId}?client_id=${selectedClientId}`) as any
                 if (result?.brief_id) {
                     setBrief(result)
-                    console.log('[BriefDetail] Set real data successfully')
                 } else {
-                    console.log('[BriefDetail] Result missing brief_id — shape mismatch:', Object.keys(result))
-                    setError('Brief data could not be loaded')
+                    setError('Brief not found or invalid response.')
+                    setBrief(null)
                 }
             } catch (err: any) {
-                console.error('[BriefDetail] Failed to load brief', briefId, ':', err?.message ?? err)
-                console.error('[BriefDetail] Full error object:', JSON.stringify(err))
+                console.error('[BriefDetail] Failed to load brief:', err?.message ?? err)
                 setError(err?.message ?? 'Failed to load brief')
+                setBrief(null)
             } finally {
                 setIsLoading(false)
             }
@@ -297,28 +287,15 @@ export default function BriefDetailPage() {
     }, [briefId, selectedClientId])
 
     if (isLoading) {
-        return (
-            <div style={{ maxWidth: 390, background: '#FFFFFF', minHeight: '100%', fontFamily: "'DM Sans', sans-serif" }}>
-                <div style={{ padding: '16px 20px' }}>
-                    <Link href="/client/notifications" style={{ fontSize: 20, color: '#32302F', textDecoration: 'none', lineHeight: 1 }}>←</Link>
-                </div>
-                <div style={{ textAlign: 'center', padding: '60px 20px', color: '#6B6867', fontSize: 14 }}>Loading brief…</div>
-            </div>
-        )
+        return <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B6867', fontSize: 14 }}>Loading brief...</div>
     }
 
-    if (error || !brief) {
-        return (
-            <div style={{ maxWidth: 390, background: '#FFFFFF', minHeight: '100%', fontFamily: "'DM Sans', sans-serif" }}>
-                <div style={{ padding: '16px 20px' }}>
-                    <Link href="/client/notifications" style={{ fontSize: 20, color: '#32302F', textDecoration: 'none', lineHeight: 1 }}>←</Link>
-                </div>
-                <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-                    <div style={{ fontSize: 16, color: '#32302F', fontFamily: 'Georgia, serif' }}>Could not load brief</div>
-                    <div style={{ fontSize: 13, color: '#6B6867', marginTop: 8 }}>{error ?? 'No data returned from server'}</div>
-                </div>
-            </div>
-        )
+    if (error) {
+        return <div style={{ textAlign: 'center', padding: '40px 0', color: '#E8443A', fontSize: 14 }}>Error: {error}</div>
+    }
+
+    if (!brief) {
+        return <div style={{ textAlign: 'center', padding: '40px 0', color: '#6B6867', fontSize: 14 }}>Brief not found.</div>
     }
 
     return (
@@ -426,7 +403,7 @@ export default function BriefDetailPage() {
                     Your next steps
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {brief.content.actions.map((action, idx) => (
+                    {brief.content.actions.map((action: any, idx: number) => (
                         <ActionCard
                             key={action.rank}
                             action={action}

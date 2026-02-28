@@ -225,19 +225,22 @@ function AdvisorNav() {
 export default function AdvisorQueuePage() {
     const router = useRouter()
 
-    // Data state — stub as initial, overwritten when API responds
-    const [briefs, setBriefs] = useState<BriefStub[]>(STUB_BRIEFS)
-    const [isLoading, setIsLoading] = useState(false)
+    // Data state — starts empty, populated from backend API
+    const [briefs, setBriefs] = useState<BriefStub[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
 
     useEffect(() => {
         const load = async () => {
             setIsLoading(true)
+            setLoadError(null)
             try {
                 const result = await api.get('/api/briefs?status=pending&limit=50&offset=0') as any
-                if (result?.briefs) setBriefs(result.briefs)
-            } catch (err) {
-                // Backend not available — stub data remains in state
-                console.log('Using stub data for queue:', err)
+                setBriefs(result?.briefs ?? [])
+            } catch (err: any) {
+                console.error('Failed to load advisor queue:', err)
+                setLoadError(err?.message ?? 'Could not reach backend')
+                setBriefs([])
             } finally {
                 setIsLoading(false)
             }
@@ -524,7 +527,7 @@ export default function AdvisorQueuePage() {
 
                             {/* Rows or empty state */}
                             {filteredBriefs.length === 0 ? (
-                                /* ---- Empty state ---- */
+                                /* ---- Empty / error state ---- */
                                 <div
                                     style={{
                                         padding: '80px 20px',
@@ -538,22 +541,24 @@ export default function AdvisorQueuePage() {
                                         style={{
                                             width: 48,
                                             height: 48,
-                                            border: '2px solid #EBEBEB',
+                                            border: `2px solid ${loadError ? '#E8443A' : '#EBEBEB'}`,
                                             borderRadius: '50%',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            color: '#6B6867',
+                                            color: loadError ? '#E8443A' : '#6B6867',
                                             fontSize: 20,
                                         }}
                                     >
-                                        ✓
+                                        {loadError ? '!' : '✓'}
                                     </div>
                                     <p style={{ color: '#32302F', fontSize: 16, margin: 0, fontWeight: 500 }}>
-                                        All caught up
+                                        {loadError ? 'Could not load queue' : 'All caught up'}
                                     </p>
-                                    <p style={{ color: '#6B6867', fontSize: 14, margin: 0 }}>
-                                        No briefs match the current filters
+                                    <p style={{ color: '#6B6867', fontSize: 14, margin: 0, textAlign: 'center', maxWidth: 300 }}>
+                                        {loadError
+                                            ? `Make sure the backend is running on port 3000. (${loadError})`
+                                            : 'No briefs match the current filters'}
                                     </p>
                                 </div>
                             ) : (

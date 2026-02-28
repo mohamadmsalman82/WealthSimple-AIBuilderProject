@@ -44,11 +44,9 @@ router.post('/', async (req: Request, res: Response) => {
     signal_summary?: string;
   };
 
-  if (!client_id || !event_type) {
-    return res.status(400).json({ error: 'Invalid request payload' });
-  }
+  const VALID_SOURCES = new Set(['self_reported', 'account_signal']);
 
-  if (source !== 'self_reported' && source !== 'account_signal') {
+  if (!client_id || !event_type || !source || !VALID_SOURCES.has(source)) {
     return res.status(400).json({ error: 'Invalid request payload' });
   }
 
@@ -56,10 +54,10 @@ router.post('/', async (req: Request, res: Response) => {
     return res.status(400).json({ error: 'Invalid event_type' });
   }
 
-  const confidence_score =
-    source === 'account_signal' && typeof rawConfidence === 'number'
-      ? rawConfidence
-      : 0.95;
+  // Self-reported events always get 0.95; account signals use the provided score
+  const confidence_score = source === 'account_signal' && typeof rawConfidence === 'number'
+    ? rawConfidence
+    : 0.95;
 
   const classification = classifyEvent({
     event_type: event_type as EventType,
@@ -109,6 +107,7 @@ router.post('/', async (req: Request, res: Response) => {
         event_type,
         source,
         confidence_score,
+        ...(signal_summary ? { signal_summary } : {}),
       },
     });
 

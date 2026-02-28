@@ -194,7 +194,11 @@ function formatTimestamp(iso: string): { date: string; time: string } {
     return { date, time: `${h12}:${mins} ${ampm}` }
 }
 
+<<<<<<< HEAD
 function truncateId(id: string | null): string {
+=======
+function truncateId(id: string | null | undefined): string {
+>>>>>>> a26ed4f0d422a0f0d8a05c2f90051e712edc4384
     if (!id) return '—'
     return id.length > 8 ? id.slice(0, 8) + '…' : id
 }
