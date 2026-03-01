@@ -24,6 +24,7 @@ const TARGET_NAMES = [
   'James Chen',         // D — debt_payoff
   'Omar Hassan',        // E — home_purchase
   'Sophie Gagnon',      // F — inheritance
+  'Marcus Williams',    // G — new_job (RBC → TD Bank payroll spike)
 ];
 
 // ---------------------------------------------------------------------------
@@ -235,6 +236,81 @@ function clusterF(clientId: string) {
   ];
 }
 
+function clusterG(clientId: string) {
+  // new_job — Marcus Williams switches from RBC to TD Bank (Oct–Dec 2025 old,
+  // Jan 2026 new employer). $2,800 bi-weekly → $3,900 bi-weekly (~39% spike).
+  return [
+    // October 2025 — RBC
+    {
+      client_id: clientId,
+      amount: 2800.00,
+      merchant_category: 'payroll',
+      transaction_type: 'credit',
+      description: 'Direct Deposit - RBC Royal Bank',
+      date: '2025-10-03',
+    },
+    {
+      client_id: clientId,
+      amount: 2800.00,
+      merchant_category: 'payroll',
+      transaction_type: 'credit',
+      description: 'Direct Deposit - RBC Royal Bank',
+      date: '2025-10-17',
+    },
+    // November 2025 — RBC
+    {
+      client_id: clientId,
+      amount: 2800.00,
+      merchant_category: 'payroll',
+      transaction_type: 'credit',
+      description: 'Direct Deposit - RBC Royal Bank',
+      date: '2025-11-07',
+    },
+    {
+      client_id: clientId,
+      amount: 2800.00,
+      merchant_category: 'payroll',
+      transaction_type: 'credit',
+      description: 'Direct Deposit - RBC Royal Bank',
+      date: '2025-11-21',
+    },
+    // December 2025 — RBC
+    {
+      client_id: clientId,
+      amount: 2800.00,
+      merchant_category: 'payroll',
+      transaction_type: 'credit',
+      description: 'Direct Deposit - RBC Royal Bank',
+      date: '2025-12-05',
+    },
+    {
+      client_id: clientId,
+      amount: 2800.00,
+      merchant_category: 'payroll',
+      transaction_type: 'credit',
+      description: 'Direct Deposit - RBC Royal Bank',
+      date: '2025-12-19',
+    },
+    // January 2026 — new employer TD Bank, ~43% higher pay ($5,600/mo → $8,000/mo)
+    {
+      client_id: clientId,
+      amount: 4000.00,
+      merchant_category: 'payroll',
+      transaction_type: 'credit',
+      description: 'Direct Deposit - TD Bank Canada',
+      date: '2026-01-10',
+    },
+    {
+      client_id: clientId,
+      amount: 4000.00,
+      merchant_category: 'payroll',
+      transaction_type: 'credit',
+      description: 'Direct Deposit - TD Bank Canada',
+      date: '2026-01-24',
+    },
+  ];
+}
+
 // ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
@@ -249,17 +325,17 @@ async function main() {
 
   if (lookupError) throw lookupError;
 
-  if (!clientRows || clientRows.length !== 6) {
+  if (!clientRows || clientRows.length !== 7) {
     const foundNames = (clientRows ?? []).map((c) => c.name);
     const missing = TARGET_NAMES.filter((n) => !foundNames.includes(n));
     throw new Error(
-      `Expected 6 clients, got ${clientRows?.length ?? 0}. ` +
+      `Expected 7 clients, got ${clientRows?.length ?? 0}. ` +
         `Missing: ${missing.join(', ')}. ` +
-        'Check names match Session 4 seed data exactly.',
+        'Check names match seed data exactly.',
     );
   }
 
-  console.log('Found 6 target clients.');
+  console.log('Found 7 target clients.');
 
   // Build a lookup by name → id
   const clientMap: Record<string, string> = {};
@@ -269,7 +345,7 @@ async function main() {
 
   const clientIds = Object.values(clientMap);
 
-  // Idempotent: delete all existing transactions for these 6 clients
+  // Idempotent: delete all existing transactions for these 7 clients
   console.log('Clearing existing transactions for target clients...');
   const { error: deleteError } = await supabase
     .from('transactions')
@@ -285,6 +361,7 @@ async function main() {
   const clusterDRows = clusterD(clientMap['James Chen']);
   const clusterERows = clusterE(clientMap['Omar Hassan']);
   const clusterFRows = clusterF(clientMap['Sophie Gagnon']);
+  const clusterGRows = clusterG(clientMap['Marcus Williams']);
 
   const allTransactions = [
     ...clusterARows,
@@ -293,6 +370,7 @@ async function main() {
     ...clusterDRows,
     ...clusterERows,
     ...clusterFRows,
+    ...clusterGRows,
   ];
 
   // Insert all at once
@@ -308,6 +386,7 @@ async function main() {
   console.log(`Seeding Client D (debt_payoff)... ${clusterDRows.length} rows`);
   console.log(`Seeding Client E (home_purchase)... ${clusterERows.length} rows`);
   console.log(`Seeding Client F (inheritance)... ${clusterFRows.length} row`);
+  console.log(`Seeding Client G (new_job — Marcus Williams)... ${clusterGRows.length} rows`);
   console.log(`Done. ${allTransactions.length} transactions seeded.`);
 }
 

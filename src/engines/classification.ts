@@ -71,6 +71,7 @@ const HIGH_CONSEQUENCE_TYPES: ReadonlySet<EventType> = new Set([
   'spouse_death',
   'divorce',
   'income_drop',
+  'inheritance',
 ]);
 
 // ---------------------------------------------------------------------------

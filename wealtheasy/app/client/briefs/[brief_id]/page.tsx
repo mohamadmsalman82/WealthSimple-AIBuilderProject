@@ -358,7 +358,7 @@ export default function BriefDetailPage() {
                     >
                         {brief.event_context}
                     </p>
-                    <div style={{ fontSize: 11, color: '#6B6867', marginTop: 12 }}>
+                    <div style={{ fontSize: 11, color: '#6B6867', marginTop: 12 }} suppressHydrationWarning>
                         Delivered {formatTimeSince(brief.delivered_at)}
                     </div>
                 </div>

@@ -590,7 +590,7 @@ export default function ClientDashboard() {
                                                     />
                                                 )}
                                             </div>
-                                            <span style={{ fontSize: 11, color: '#6B6867' }}>
+                                            <span style={{ fontSize: 11, color: '#6B6867' }} suppressHydrationWarning>
                                                 {formatTimeSince(notif.delivered_at)}
                                             </span>
                                         </div>

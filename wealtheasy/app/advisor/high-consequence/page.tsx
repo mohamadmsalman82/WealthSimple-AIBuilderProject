@@ -7,44 +7,19 @@ import { api } from '@/lib/api'
 import ClassifyModal from '@/components/advisor/ClassifyModal'
 
 /* ------------------------------------------------------------------ */
-/*  Stub data                                                         */
+/*  Types                                                             */
 /* ------------------------------------------------------------------ */
 
-const STUB_HC_EVENTS = [
-    {
-        event_id: 'hc1',
-        client_id: 'c2',
-        client_name: 'Marcus Tremblay',
-        event_type: 'lump_sum_deposit',
-        source: 'account_signal',
-        confidence_score: 0.71,
-        signal_summary: 'Single deposit of $47,000 detected — source unconfirmed',
-        created_at: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-    },
-    {
-        event_id: 'hc2',
-        client_id: 'c4',
-        client_name: 'Fatima Al-Hassan',
-        event_type: 'inheritance',
-        source: 'account_signal',
-        confidence_score: 0.68,
-        signal_summary: 'Large transfer_in with description containing "estate" — $91,200',
-        created_at: new Date(Date.now() - 33 * 60 * 1000).toISOString(),
-    },
-    {
-        event_id: 'hc3',
-        client_id: 'c5',
-        client_name: 'Priya Nair',
-        event_type: 'spouse_death',
-        source: 'account_signal',
-        confidence_score: 0.54,
-        signal_summary:
-            'Disappearance of joint account activity combined with single large transfer_in — pattern consistent with estate settlement',
-        created_at: new Date(Date.now() - 91 * 60 * 1000).toISOString(),
-    },
-]
-
-type HCEvent = (typeof STUB_HC_EVENTS)[number]
+type HCEvent = {
+    event_id: string
+    client_id: string
+    client_name: string
+    event_type: string
+    source: string
+    confidence_score: number
+    signal_summary: string | null
+    created_at: string
+}
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -220,7 +195,7 @@ function EventCard({ event, index }: { event: HCEvent; index: number }) {
 
                     {/* Right */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <span style={{ fontSize: 12, color: '#6B6867' }}>{formatTimeSince(event.created_at)}</span>
+                        <span style={{ fontSize: 12, color: '#6B6867' }} suppressHydrationWarning>{formatTimeSince(event.created_at)}</span>
                         <span
                             style={{
                                 fontSize: 12,
@@ -260,9 +235,16 @@ function EventCard({ event, index }: { event: HCEvent; index: number }) {
                             marginTop: 6,
                         }}
                     >
-                        {event.signal_summary}
+                        {event.source === 'self_reported' && (
+                            <span>Client self-reported a {eventLabel.toLowerCase()} event.</span>
+                        )}
+                        {event.signal_summary && (
+                            <span>{event.source === 'self_reported' ? ' ' : ''}{event.signal_summary}</span>
+                        )}
                     </div>
-                    <div style={{ fontSize: 12, color: '#6B6867', marginTop: 6 }}>Source: Account Signal</div>
+                    <div style={{ fontSize: 12, color: '#6B6867', marginTop: 6 }}>
+                        Source: {event.source === 'self_reported' ? 'Self-Reported' : 'Account Signal'}
+                    </div>
                 </div>
 
                 {/* ---- Divider ---- */}
@@ -371,17 +353,20 @@ function EventCard({ event, index }: { event: HCEvent; index: number }) {
 /* ------------------------------------------------------------------ */
 
 export default function HighConsequencePage() {
-    const [events, setEvents] = useState(STUB_HC_EVENTS)
-    const [isLoading, setIsLoading] = useState(false)
+    const [events, setEvents] = useState<HCEvent[]>([])
+    const [isLoading, setIsLoading] = useState(true)
+    const [loadError, setLoadError] = useState<string | null>(null)
 
     useEffect(() => {
         const load = async () => {
             setIsLoading(true)
+            setLoadError(null)
             try {
-                const result = await api.get('/api/events/high-consequence?status=pending&limit=50&offset=0') as any
-                if (result?.events) setEvents(result.events)
-            } catch (err) {
-                console.log('Using stub data for HC events:', err)
+                const result = await api.get('/api/events/high-consequence?status=pending_classification&limit=50&offset=0') as any
+                setEvents(result?.events ?? [])
+            } catch (err: any) {
+                console.error('Failed to load high-consequence events:', err)
+                setLoadError(err?.message ?? 'Could not reach backend')
             } finally {
                 setIsLoading(false)
             }
@@ -469,8 +454,44 @@ export default function HighConsequencePage() {
                     processing begins, is dismissed, or is escalated to compliance.
                 </div>
 
-                {/* Events list or empty state */}
-                {events.length === 0 ? (
+                {/* Events list / loading / empty state */}
+                {isLoading ? (
+                    <div style={{ padding: '80px 20px', display: 'flex', justifyContent: 'center' }}>
+                        <p style={{ color: '#6B6867', fontSize: 14, margin: 0 }}>Loading events…</p>
+                    </div>
+                ) : loadError ? (
+                    <div
+                        style={{
+                            padding: '80px 20px',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 12,
+                        }}
+                    >
+                        <div
+                            style={{
+                                width: 48,
+                                height: 48,
+                                border: '2px solid #E8443A',
+                                borderRadius: '50%',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                color: '#E8443A',
+                                fontSize: 20,
+                            }}
+                        >
+                            !
+                        </div>
+                        <p style={{ color: '#32302F', fontSize: 16, margin: 0, fontWeight: 500 }}>
+                            Could not load events
+                        </p>
+                        <p style={{ color: '#6B6867', fontSize: 14, margin: 0, textAlign: 'center', maxWidth: 300 }}>
+                            Make sure the backend is running on port 3001. ({loadError})
+                        </p>
+                    </div>
+                ) : events.length === 0 ? (
                     <div
                         style={{
                             padding: '80px 20px',

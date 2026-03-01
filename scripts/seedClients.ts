@@ -392,6 +392,22 @@ const clients = [
     avatar_initials: 'RO',
     portfolio_total: 5200.00,
   },
+
+  // ── Ontario (ON) — added client ───────────────────────────────────────────
+
+  {
+    name: 'Marcus Williams',
+    email: 'marcus.williams@gmail.com',
+    age: 34,
+    province: 'ON',
+    income_bracket: '100000-150000',
+    accounts: ['TFSA', 'RRSP'],
+    tfsa_room: 38000,   // cumulative max 102000 (capped at 2009)
+    rrsp_room: 20000,
+    dependents: 1,
+    avatar_initials: 'MW',
+    portfolio_total: 145000.00,
+  },
 ];
 
 // ---------------------------------------------------------------------------

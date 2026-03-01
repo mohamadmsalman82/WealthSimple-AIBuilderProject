@@ -279,7 +279,7 @@ export default function NotificationsPage() {
                                             >
                                                 {notif.headline}
                                             </div>
-                                            <div style={{ fontSize: 11, color: '#6B6867', marginTop: 4 }}>
+                                            <div style={{ fontSize: 11, color: '#6B6867', marginTop: 4 }} suppressHydrationWarning>
                                                 {formatTimeSince(notif.delivered_at)}
                                             </div>
                                         </div>
