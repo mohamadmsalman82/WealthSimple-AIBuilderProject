@@ -199,6 +199,7 @@ function truncateId(id: string | null | undefined): string {
     return id.length > 8 ? id.slice(0, 8) + '…' : id
 }
 
+
 function renderMetadataInline(meta: Record<string, unknown>): React.ReactNode {
     const parts: React.ReactNode[] = []
     Object.entries(meta).forEach(([key, val], i) => {
